@@ -1,0 +1,58 @@
+from gurobipy import *
+n=3
+p=list(range(1,(n*n)+1))
+
+def s(p):
+    m=Model()
+    #x[i,j] ith number should be jth place
+    x={}
+    for i in p:
+        for j in p:
+         x[i,j]=m.addVar(vtype=GRB.BINARY,name='x_%d_%d'%(i,j))
+
+    z={}
+    z=m.addVar(vtype=GRB.CONTINUOUS,name='y',obj=1)
+
+    m.modelsense=GRB.MAXIMIZE
+
+    m.update()
+
+
+    m.addConstr(quicksum(x[i,j] for i in p for j in p)==z)
+
+    #Constraint 1 : addition of all row elements
+    for k in range(0,n):
+     m.addConstr(quicksum(quicksum(x[i,j]*i for i in p) for j in range((k*n)+1,(k*n)+n+1))==((n)*((n*n)+1))/2)
+
+    #Constraint 2 : addition of all diagonal-1 element
+    m.addConstr(quicksum(quicksum(x[i, (n*j)+j+1] * i for i in p) for j in range(0,n) )== ((n)*((n*n)+1))/2)
+
+    # Constraint 3 : addition of all column elements
+    for k in range(1,n+1):
+     m.addConstr(quicksum(quicksum(x[i, (n*j)+k] * i for i in p) for j in range(0,n)) ==  ((n)*((n*n)+1))/2)
+
+    #Constraint 4 : addition of all diagonal-2 element
+    m.addConstr(quicksum(quicksum(x[i, (j*n)-j+1] * i for i in p) for j in range(1,n+1)) ==  ((n)*((n*n)+1))/2)
+
+    #one block will get only one number
+    for j in p:
+     m.addConstr(quicksum(x[i,j] for i in p)==1)
+
+    # one number will be assigned only single block and will not be repeated
+    for i in p:
+     m.addConstr(quicksum(x[i, j] for j in p) == 1)
+
+
+    def printsol():
+        if m.status==GRB.status.OPTIMAL:
+            for i in p:
+                for j in p:
+                    print(x[i,j])
+
+
+    m.optimize()
+    printsol()
+
+s(p)
+
+
